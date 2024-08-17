@@ -124,8 +124,21 @@ df['Q006'] = df['Q006'].map(faixas_renda)
 faixa_etaria_counts.index = faixa_etaria_counts.index.map(faixa_etaria_labels)
 df_filtrado = df.loc[df['TP_ESCOLA'] != 'Não Respondeu']
 
-media_por_categoria = df_filtrado.groupby('Q001')['media'].mean().reset_index()
-media_por_categoria.columns = ['Categoria', 'Media']
+# Agrupar e calcular a média para as categorias do pai
+media_por_categoria_pai = df_filtrado.groupby('Q001')['media'].mean().reset_index()
+media_por_categoria_pai.columns = ['Categoria', 'Media']
+media_por_categoria_pai['Descricao'] = media_por_categoria_pai['Categoria'].map(nivel_educacional)
+media_por_categoria_pai['Tipo'] = 'Pai'  # Identificar que é a linha do pai
+
+# Agrupar e calcular a média para as categorias da mãe
+media_por_categoria_mae = df_filtrado.groupby('Q002')['media'].mean().reset_index()
+media_por_categoria_mae.columns = ['Categoria', 'Media']
+media_por_categoria_mae['Descricao'] = media_por_categoria_mae['Categoria'].map(nivel_educacional)
+media_por_categoria_mae['Tipo'] = 'Mãe'  # Identificar que é a linha da mãe
+media_por_categoria = pd.concat([media_por_categoria_pai, media_por_categoria_mae])
+#media_por_categoria = df_filtrado.groupby('Q001')['media'].mean().reset_index()
+#media_por_categoria.columns = ['Categoria', 'Media']
+#media_por_categoria['Descricao'] = media_por_categoria['Categoria'].map(nivel_educacional)
 # Cria o gráfico de barras
 fig1 = px.bar(
     faixa_etaria_counts,
@@ -135,34 +148,43 @@ fig1 = px.bar(
     title="Distribuição por Faixa Etária",
     labels={"x": "Quantidade de Participantes", "TP_FAIXA_ETARIA": "Faixa Etária"},
 )
+fig1.update_layout(
+    yaxis_title="Faixa Etária",
+    yaxis=dict(
+        tickmode="linear",
+        tickvals=faixa_etaria_counts.index,
+    )
+)
 fig2 = px.box(
     df,
     x="TP_SEXO",
     y="media",
     title="Média das provas por sexo",
-    labels={"TP_SEXO": "Sexo", "media": "Média aritimetica", "M": "masculino"},
+    labels={"TP_SEXO": "Sexo", "media": "Média", "M": "masculino"},
 )
 fig3 = px.box(
     df_filtrado,
     x="TP_ESCOLA",
     y="media",
     title="Média das provas por tipo de escolaridade",
-    labels={"TP_ESCOLA": "Rede de ensino", "media": "Média aritimetica", "M": "masculino"},
+    labels={"TP_ESCOLA": "Rede de ensino", "media": "Média das Notas", "M": "masculino"},
 )
 
 fig4 = px.pie(df, names="TP_ESCOLA", hole=.3,title="Proporção por tipo de Escolaridade")
 
 col1, col2 = st.columns(2)
 
-choice = st.selectbox("Selecione a area", areas_enem)
+choice = st.selectbox("Selecione a área", areas_enem)
 select = choice_select(choice)
 fig5 = px.ecdf(df_filtrado, y= select, color="TP_ESCOLA", ecdfnorm = None, labels={ "TP_ESCOLA": "Rede de ensino", "NU_NOTA_LC":"Nota Linguagens, Códigos e suas Tecnologias" ,
     "NU_NOTA_MT":"Nota Matemática e suas Tecnologias",
     "NU_NOTA_CN" : "Nota Ciências da Natureza e suas Tecnologias",
     "NU_NOTA_CH" : "Nota Ciências Humanas e suas Tecnologias",
     "NU_NOTA_REDACAO" : "Nota Redação"})
-fig6 = px.histogram(df_filtrado, y="Q006", x="media",histfunc='avg', labels= {"Q006": "Renda Familiar"}) 
-fig7 = px.line(media_por_categoria, x="Categoria", y="Media", text="Categoria", title="Média no Exame X Grau de escolaridade")
+fig6 = px.histogram(df_filtrado, y="Q006", x="media",histfunc='avg', title="Média das Notas do ENEM por Faixa de Renda Familiar", labels= {"Q006": "Renda Familiar"}) 
+fig6.update_xaxes(title_text="Média das Notas")
+fig7 = px.line(media_por_categoria, x="Categoria",color="Tipo", y="Media", title="Média das Notas do ENEM por Grau de escolaridade dos pais", hover_data={"Descricao": True}, markers= True)
+
 st.plotly_chart(fig5)
 
 col3, col4 = st.columns(2)
@@ -171,7 +193,6 @@ col2.plotly_chart(fig2)
 col3.plotly_chart(fig3)
 col4.plotly_chart(fig4)
 st.plotly_chart(fig1)
-
 col5, col6 = st.columns(2)
 col5.plotly_chart(fig7)
 col6.plotly_chart(fig6)
