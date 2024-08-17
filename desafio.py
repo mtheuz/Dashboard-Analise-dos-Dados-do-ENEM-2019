@@ -59,24 +59,25 @@ faixa_etaria_labels = {
 }
 
 faixas_renda = {
-    'A': 'Nenhuma renda.',
-    'B': 'Até R$ 998,00',
-    'C': 'De R$ 998,01 até R$ 1.497,00',
-    'D': 'De R$ 1.497,01 até R$ 1.996,00',
-    'E': 'De R$ 1.996,01 até R$ 2.495,00',
-    'F': 'De R$ 2.495,01 até R$ 2.994,00',
-    'G': 'De R$ 2.994,01 até R$ 3.992,00',
-    'H': 'De R$ 3.992,01 até R$ 4.990,00',
-    'I': 'De R$ 4.990,01 até R$ 5.988,00',
-    'J': 'De R$ 5.988,01 até R$ 6.986,00',
-    'K': 'De R$ 6.986,01 até R$ 7.984,00',
-    'L': 'De R$ 7.984,01 até R$ 8.982,00',
-    'M': 'De R$ 8.982,01 até R$ 9.980,00',
-    'N': 'De R$ 9.980,01 até R$ 11.976,00',
-    'O': 'De R$ 11.976,01 até R$ 14.970,00',
+    'Q': 'Mais de R$ 19.960,00',
     'P': 'De R$ 14.970,01 até R$ 19.960,00',
-    'Q': 'Mais de R$ 19.960,00'
+    'O': 'De R$ 11.976,01 até R$ 14.970,00',
+    'N': 'De R$ 9.980,01 até R$ 11.976,00',
+    'M': 'De R$ 8.982,01 até R$ 9.980,00',
+    'L': 'De R$ 7.984,01 até R$ 8.982,00',
+    'K': 'De R$ 6.986,01 até R$ 7.984,00',
+    'J': 'De R$ 5.988,01 até R$ 6.986,00',
+    'I': 'De R$ 4.990,01 até R$ 5.988,00',
+    'H': 'De R$ 3.992,01 até R$ 4.990,00',
+    'G': 'De R$ 2.994,01 até R$ 3.992,00',
+    'F': 'De R$ 2.495,01 até R$ 2.994,00',
+    'E': 'De R$ 1.996,01 até R$ 2.495,00',
+    'D': 'De R$ 1.497,01 até R$ 1.996,00',
+    'C': 'De R$ 998,01 até R$ 1.497,00',
+    'B': 'Até R$ 998,00',
+    'A': 'Nenhuma renda.'
 }
+
 
 nivel_educacional = {
     'A': 'Nunca estudou.',
@@ -119,19 +120,18 @@ fig = px.pie(
 # Conta a quantidade de participantes em cada faixa etária
 faixa_etaria_counts = df["TP_FAIXA_ETARIA"].value_counts().sort_index()
 df['Q006'] = df['Q006'].map(faixas_renda)
-
 # Substitui os valores numéricos pelas descrições das faixas etárias
 faixa_etaria_counts.index = faixa_etaria_counts.index.map(faixa_etaria_labels)
 df_filtrado = df.loc[df['TP_ESCOLA'] != 'Não Respondeu']
 
 # Agrupar e calcular a média para as categorias do pai
-media_por_categoria_pai = df_filtrado.groupby('Q001')['media'].mean().reset_index()
+media_por_categoria_pai = df.groupby('Q001')['media'].mean().reset_index()
 media_por_categoria_pai.columns = ['Categoria', 'Media']
 media_por_categoria_pai['Descricao'] = media_por_categoria_pai['Categoria'].map(nivel_educacional)
 media_por_categoria_pai['Tipo'] = 'Pai'  # Identificar que é a linha do pai
 
 # Agrupar e calcular a média para as categorias da mãe
-media_por_categoria_mae = df_filtrado.groupby('Q002')['media'].mean().reset_index()
+media_por_categoria_mae = df.groupby('Q002')['media'].mean().reset_index()
 media_por_categoria_mae.columns = ['Categoria', 'Media']
 media_por_categoria_mae['Descricao'] = media_por_categoria_mae['Categoria'].map(nivel_educacional)
 media_por_categoria_mae['Tipo'] = 'Mãe'  # Identificar que é a linha da mãe
@@ -170,7 +170,7 @@ fig3 = px.box(
     labels={"TP_ESCOLA": "Rede de ensino", "media": "Média das Notas", "M": "masculino"},
 )
 
-fig4 = px.pie(df, names="TP_ESCOLA", hole=.3,title="Proporção por tipo de Escolaridade")
+fig4 = px.pie(df_filtrado, names="TP_ESCOLA", hole=.3,title="Proporção por tipo de Escolaridade", labels={"TP_ESCOLA": "Rede de Ensino"})
 
 col1, col2 = st.columns(2)
 
@@ -181,11 +181,11 @@ fig5 = px.ecdf(df_filtrado, y= select, color="TP_ESCOLA", ecdfnorm = None, label
     "NU_NOTA_CN" : "Nota Ciências da Natureza e suas Tecnologias",
     "NU_NOTA_CH" : "Nota Ciências Humanas e suas Tecnologias",
     "NU_NOTA_REDACAO" : "Nota Redação"})
-fig6 = px.histogram(df_filtrado, y="Q006", x="media",histfunc='avg', title="Média das Notas do ENEM por Faixa de Renda Familiar", labels= {"Q006": "Renda Familiar"}) 
+fig6 = px.histogram(df, y="Q006", x="media",histfunc='avg',  category_orders={"Q006": faixas_renda.values()}, title="Média das Notas do ENEM por Faixa de Renda Familiar", labels= {"Q006": "Renda Familiar"}) 
 fig6.update_xaxes(title_text="Média das Notas")
 fig7 = px.line(media_por_categoria, x="Categoria",color="Tipo", y="Media", title="Média das Notas do ENEM por Grau de escolaridade dos pais", hover_data={"Descricao": True}, markers= True)
-
 st.plotly_chart(fig5)
+
 
 col3, col4 = st.columns(2)
 col1.plotly_chart(fig)
